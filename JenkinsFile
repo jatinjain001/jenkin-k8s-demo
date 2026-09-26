@@ -33,36 +33,54 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
+                sh '''
+                    docker build \
+                      -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                      .
+                '''
             }
         }
 
-        stage('Load Image into Minikube') {
+        stage('Deploy') {
             steps {
-                sh 'minikube image load ${IMAGE_NAME}:${IMAGE_TAG}'
+                sh '''
+                    kubectl \
+                      --kubeconfig=/root/jenkins-kubeconfig \
+                      set image deployment/jenkins-k8s-demo \
+                      jenkins-k8s-demo=${IMAGE_NAME}:${IMAGE_TAG}
+                '''
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Verify Rollout') {
             steps {
-                sh 'kubectl apply -f k8s/'
+                sh '''
+                    kubectl \
+                      --kubeconfig=/root/jenkins-kubeconfig \
+                      rollout status deployment/jenkins-k8s-demo
+                '''
             }
         }
 
-        stage('Verify Deployment') {
+        stage('Verify Pods') {
             steps {
-                sh 'kubectl rollout status deployment/jenkins-k8s-demo'
+                sh '''
+                    kubectl \
+                      --kubeconfig=/root/jenkins-kubeconfig \
+                      get pods \
+                      -l app=jenkins-k8s-demo
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'CI/CD pipeline completed successfully! 🚀'
+            echo '🚀 CI/CD pipeline completed successfully!'
         }
 
         failure {
-            echo 'CI/CD pipeline failed. Check the stage logs.'
+            echo '❌ Pipeline failed. Check the failed stage.'
         }
     }
 }
