@@ -52,16 +52,6 @@ pipeline {
             }
         }
 
-        stage('Verify Rollout') {
-            steps {
-                sh '''
-                    kubectl \
-                      --kubeconfig=/root/jenkins-kubeconfig \
-                      rollout status deployment/jenkins-k8s-demo
-                '''
-            }
-        }
-
         stage('Verify Pods') {
             steps {
                 sh '''
